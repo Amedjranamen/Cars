@@ -143,6 +143,38 @@ class ChatResponse(BaseModel):
     response: str
     session_id: str
 
+# GPS Location Models
+class LocationUpdate(BaseModel):
+    vehicle_id: str
+    latitude: float
+    longitude: float
+    speed: Optional[float] = 0.0
+    heading: Optional[float] = 0.0
+
+class VehicleLocation(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    vehicle_id: str
+    latitude: float
+    longitude: float
+    speed: float = 0.0
+    heading: float = 0.0
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        populate_by_name = True
+
+# Statistics Models
+class StatsResponse(BaseModel):
+    total_vehicles: int
+    available_vehicles: int
+    total_reservations: int
+    pending_reservations: int
+    total_purchases: int
+    total_users: int
+    total_revenue: float
+    monthly_reservations: int
+    monthly_revenue: float
+
 # ==================== HELPER FUNCTIONS ====================
 
 def create_access_token(data: dict):
