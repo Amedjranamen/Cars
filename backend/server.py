@@ -548,11 +548,24 @@ async def get_admin_stats():
     total_reservations = await db.reservations.count_documents({})
     pending_reservations = await db.reservations.count_documents({"status": "pending"})
     total_purchases = await db.purchases.count_documents({})
-    total_users = await db.users.count_documents({})
+    total_users = await db.users.count_documents({"role": "user"})
     
-    # Calculate revenue (example)
+    # Calculate total revenue
     reservations = await db.reservations.find({"status": {"$in": ["accepted", "completed"]}}).to_list(1000)
     total_revenue = sum([r.get("total_price", 0) for r in reservations])
+    
+    # Calculate monthly stats (current month)
+    current_month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    monthly_reservations = await db.reservations.count_documents({
+        "created_at": {"$gte": current_month_start},
+        "status": {"$in": ["accepted", "completed"]}
+    })
+    
+    monthly_reservations_list = await db.reservations.find({
+        "created_at": {"$gte": current_month_start},
+        "status": {"$in": ["accepted", "completed"]}
+    }).to_list(1000)
+    monthly_revenue = sum([r.get("total_price", 0) for r in monthly_reservations_list])
     
     return {
         "total_vehicles": total_vehicles,
@@ -561,7 +574,9 @@ async def get_admin_stats():
         "pending_reservations": pending_reservations,
         "total_purchases": total_purchases,
         "total_users": total_users,
-        "total_revenue": total_revenue
+        "total_revenue": total_revenue,
+        "monthly_reservations": monthly_reservations,
+        "monthly_revenue": monthly_revenue
     }
 
 # ==================== CHAT AI ROUTES ====================
