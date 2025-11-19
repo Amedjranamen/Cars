@@ -540,6 +540,31 @@ async def get_all_purchases():
 
 # ==================== ADMIN ROUTES ====================
 
+@api_router.get("/admin/users", dependencies=[Depends(get_admin_user)])
+async def get_all_users():
+    """Get all users (clients) with their activity"""
+    users = await db.users.find({"role": "user"}).to_list(1000)
+    
+    user_list = []
+    for user in users:
+        user_id = str(user["_id"])
+        
+        # Count reservations and purchases for each user
+        reservations_count = await db.reservations.count_documents({"user_id": user_id})
+        purchases_count = await db.purchases.count_documents({"user_id": user_id})
+        
+        user_list.append({
+            "id": user_id,
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "phone": user["phone"],
+            "created_at": user["created_at"],
+            "reservations_count": reservations_count,
+            "purchases_count": purchases_count
+        })
+    
+    return user_list
+
 @api_router.get("/admin/stats", dependencies=[Depends(get_admin_user)])
 async def get_admin_stats():
     # Count documents
