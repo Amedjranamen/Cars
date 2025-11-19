@@ -604,6 +604,113 @@ async def get_chat_history(session_id: str):
         msg["_id"] = str(msg["_id"])
     return messages
 
+# ==================== GPS TRACKING ROUTES ====================
+
+@api_router.post("/vehicles/{vehicle_id}/location", dependencies=[Depends(get_admin_user)])
+async def update_vehicle_location(vehicle_id: str, location: LocationUpdate):
+    """Update vehicle GPS location (admin only - simulates GPS tracker)"""
+    if not ObjectId.is_valid(vehicle_id):
+        raise HTTPException(status_code=400, detail="Invalid vehicle ID")
+    
+    # Verify vehicle exists
+    vehicle = await db.vehicles.find_one({"_id": ObjectId(vehicle_id)})
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Store location in history
+    location_dict = {
+        "vehicle_id": vehicle_id,
+        "latitude": location.latitude,
+        "longitude": location.longitude,
+        "speed": location.speed,
+        "heading": location.heading,
+        "timestamp": datetime.utcnow()
+    }
+    
+    await db.vehicle_locations.insert_one(location_dict)
+    
+    # Update vehicle's current location
+    await db.vehicles.update_one(
+        {"_id": ObjectId(vehicle_id)},
+        {"$set": {
+            "current_location": {
+                "latitude": location.latitude,
+                "longitude": location.longitude,
+                "last_updated": datetime.utcnow()
+            }
+        }}
+    )
+    
+    return {"message": "Location updated successfully"}
+
+@api_router.get("/vehicles/{vehicle_id}/location")
+async def get_vehicle_current_location(vehicle_id: str):
+    """Get current vehicle GPS location"""
+    if not ObjectId.is_valid(vehicle_id):
+        raise HTTPException(status_code=400, detail="Invalid vehicle ID")
+    
+    vehicle = await db.vehicles.find_one({"_id": ObjectId(vehicle_id)})
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    return vehicle.get("current_location", {})
+
+@api_router.get("/vehicles/{vehicle_id}/location/history")
+async def get_vehicle_location_history(
+    vehicle_id: str,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get vehicle GPS location history"""
+    if not ObjectId.is_valid(vehicle_id):
+        raise HTTPException(status_code=400, detail="Invalid vehicle ID")
+    
+    # Check if user is admin or has active reservation for this vehicle
+    is_admin = current_user.get("role") == "admin"
+    has_reservation = False
+    
+    if not is_admin:
+        reservation = await db.reservations.find_one({
+            "vehicle_id": vehicle_id,
+            "user_id": current_user["_id"],
+            "status": {"$in": ["accepted"]},
+            "start_date": {"$lte": datetime.utcnow()},
+            "end_date": {"$gte": datetime.utcnow()}
+        })
+        has_reservation = reservation is not None
+    
+    if not is_admin and not has_reservation:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    locations = await db.vehicle_locations.find(
+        {"vehicle_id": vehicle_id}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    for loc in locations:
+        loc["_id"] = str(loc["_id"])
+    
+    return locations
+
+@api_router.get("/vehicles/map/all")
+async def get_all_vehicles_on_map():
+    """Get all vehicles with their current locations for map display"""
+    vehicles = await db.vehicles.find({"available": True}).to_list(1000)
+    
+    vehicles_on_map = []
+    for vehicle in vehicles:
+        if "current_location" in vehicle:
+            vehicles_on_map.append({
+                "_id": str(vehicle["_id"]),
+                "name": vehicle["name"],
+                "brand": vehicle["brand"],
+                "category": vehicle["category"],
+                "type": vehicle["type"],
+                "image": vehicle["images"][0] if vehicle.get("images") else None,
+                "location": vehicle["current_location"]
+            })
+    
+    return vehicles_on_map
+
 # ==================== MAIN APP SETUP ====================
 
 app.include_router(api_router)
