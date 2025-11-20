@@ -4,299 +4,227 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  Image,
 } from 'react-native';
-import { Image } from 'expo-image';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 import { Vehicle } from '../../types';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - Spacing.lg * 2;
-
 interface VehicleCardProps {
   vehicle: Vehicle;
   onPress: () => void;
-  variant?: 'default' | 'compact';
 }
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
-export const VehicleCard: React.FC<VehicleCardProps> = ({
-  vehicle,
-  onPress,
-  variant = 'default',
-}) => {
-  const scale = useSharedValue(1);
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.97, { damping: 15 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15 });
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const getPrice = () => {
-    if (vehicle.type === 'vente' && vehicle.price_sale) {
-      return `${vehicle.price_sale.toLocaleString('fr-FR')} €`;
-    }
-    if (vehicle.type === 'location' && vehicle.price_per_day) {
-      return `${vehicle.price_per_day.toLocaleString('fr-FR')} €/jour`;
-    }
-    if (vehicle.type === 'both') {
-      return vehicle.price_per_day 
-        ? `${vehicle.price_per_day.toLocaleString('fr-FR')} €/jour`
-        : `${vehicle.price_sale?.toLocaleString('fr-FR')} €`;
-    }
-    return 'Prix sur demande';
-  };
-
-  const getCategoryColor = () => {
-    return Colors.categoryBadge[vehicle.category as keyof typeof Colors.categoryBadge] || Colors.primary;
-  };
-
-  if (variant === 'compact') {
-    return (
-      <AnimatedTouchable
-        style={[styles.compactCard, animatedStyle]}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={0.9}
-      >
-        <Image
-          source={{ uri: vehicle.images[0] || 'https://via.placeholder.com/400x250/2C2C2E/FFFFFF?text=Vehicule' }}
-          style={styles.compactImage}
-          contentFit="cover"
-          transition={200}
-        />
-        <View style={styles.compactContent}>
-          <Text style={styles.compactTitle} numberOfLines={1}>
-            {vehicle.name}
-          </Text>
-          <Text style={styles.compactPrice}>{getPrice()}</Text>
-        </View>
-      </AnimatedTouchable>
-    );
-  }
+export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
+  const price = vehicle.price_sale || vehicle.price_per_day;
+  const priceLabel = vehicle.price_sale ? 'Prix' : '/jour';
 
   return (
-    <AnimatedTouchable
-      style={[styles.card, animatedStyle]}
+    <TouchableOpacity
+      style={styles.container}
       onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={0.9}
+      activeOpacity={0.8}
+      data-testid={`vehicle-card-${vehicle._id}`}
     >
       {/* Image */}
       <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: vehicle.images[0] || 'https://via.placeholder.com/400x250/2C2C2E/FFFFFF?text=Vehicule' }}
-          style={styles.image}
-          contentFit="cover"
-          transition={200}
-        />
+        {vehicle.images && vehicle.images.length > 0 ? (
+          <Image
+            source={{ uri: vehicle.images[0] }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="car-sport" size={40} color={Colors.textSecondary} />
+          </View>
+        )}
         
-        {/* Type badge */}
-        <View style={[styles.typeBadge, { backgroundColor: vehicle.type === 'vente' ? Colors.success : Colors.info }]}>
+        {/* Type Badge */}
+        <View style={[styles.typeBadge, 
+          vehicle.type === 'vente' ? styles.typeSale : 
+          vehicle.type === 'location' ? styles.typeRent : 
+          styles.typeBoth
+        ]}>
           <Text style={styles.typeBadgeText}>
-            {vehicle.type === 'vente' ? 'À vendre' : vehicle.type === 'location' ? 'À louer' : 'Vente/Location'}
+            {vehicle.type === 'vente' ? '💰 Vente' : 
+             vehicle.type === 'location' ? '🔑 Location' : 
+             '🆕 Vente/Location'}
           </Text>
         </View>
 
-        {/* Category badge */}
-        <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor() }]}>
-          <Text style={styles.categoryBadgeText}>{vehicle.category}</Text>
-        </View>
-
-        {/* Availability indicator */}
-        {!vehicle.available && (
-          <View style={styles.unavailableBadge}>
-            <Text style={styles.unavailableBadgeText}>Non disponible</Text>
-          </View>
-        )}
+        {/* Favorite Button */}
+        <TouchableOpacity style={styles.favoriteButton}>
+          <Ionicons name="heart-outline" size={20} color={Colors.white} />
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.titleSection}>
-            <Text style={styles.brand}>{vehicle.brand}</Text>
-            <Text style={styles.name} numberOfLines={1}>
-              {vehicle.name}
+          <Text style={styles.brand}>{vehicle.brand}</Text>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{vehicle.category}</Text>
+          </View>
+        </View>
+        
+        <Text style={styles.name} numberOfLines={1}>
+          {vehicle.name}
+        </Text>
+
+        {/* Features */}
+        <View style={styles.features}>
+          <View style={styles.feature}>
+            <Ionicons name="speedometer-outline" size={14} color={Colors.textSecondary} />
+            <Text style={styles.featureText}>{vehicle.mileage.toLocaleString()} km</Text>
+          </View>
+          <View style={styles.feature}>
+            <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
+            <Text style={styles.featureText}>{vehicle.year}</Text>
+          </View>
+          <View style={styles.feature}>
+            <Ionicons 
+              name={vehicle.transmission === 'auto' ? 'settings-outline' : 'git-branch-outline'} 
+              size={14} 
+              color={Colors.textSecondary} 
+            />
+            <Text style={styles.featureText}>
+              {vehicle.transmission === 'auto' ? 'Auto' : 'Manuel'}
             </Text>
           </View>
-          <View style={styles.priceSection}>
-            <Text style={styles.price}>{getPrice()}</Text>
-          </View>
         </View>
 
-        {/* Specs */}
-        <View style={styles.specs}>
-          <View style={styles.specItem}>
-            <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.specText}>{vehicle.year}</Text>
-          </View>
-          <View style={styles.specItem}>
-            <Ionicons name="speedometer-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.specText}>{vehicle.mileage.toLocaleString('fr-FR')} km</Text>
-          </View>
-          <View style={styles.specItem}>
-            <Ionicons name="settings-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.specText}>{vehicle.transmission === 'auto' ? 'Auto' : 'Manuel'}</Text>
-          </View>
-          <View style={styles.specItem}>
-            <Ionicons name="water-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.specText}>{vehicle.fuel}</Text>
-          </View>
+        {/* Price */}
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>
+            {price ? `${price.toLocaleString()} DH` : 'Prix NC'}
+          </Text>
+          {vehicle.price_per_day && (
+            <Text style={styles.priceLabel}>{priceLabel}</Text>
+          )}
         </View>
       </View>
-    </AnimatedTouchable>
+    </TouchableOpacity>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  card: {
+  container: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    marginBottom: Spacing.md,
-    width: CARD_WIDTH,
-    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   imageContainer: {
-    position: 'relative',
     width: '100%',
-    height: 200,
+    height: 140,
+    position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.backgroundElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   typeBadge: {
     position: 'absolute',
     top: Spacing.sm,
     left: Spacing.sm,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
   },
+  typeSale: {
+    backgroundColor: 'rgba(52, 199, 89, 0.9)',
+  },
+  typeRent: {
+    backgroundColor: 'rgba(10, 132, 255, 0.9)',
+  },
+  typeBoth: {
+    backgroundColor: 'rgba(255, 149, 0, 0.9)',
+  },
   typeBadgeText: {
-    color: Colors.white,
     fontSize: FontSizes.xs,
     fontWeight: '600',
+    color: Colors.white,
   },
-  categoryBadge: {
+  favoriteButton: {
     position: 'absolute',
     top: Spacing.sm,
     right: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-  },
-  categoryBadgeText: {
-    color: Colors.white,
-    fontSize: FontSizes.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  unavailableBadge: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.error,
-    paddingVertical: Spacing.xs,
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
-  },
-  unavailableBadgeText: {
-    color: Colors.white,
-    fontSize: FontSizes.xs,
-    fontWeight: '600',
+    justifyContent: 'center',
   },
   content: {
     padding: Spacing.md,
+    gap: Spacing.sm,
   },
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
-  },
-  titleSection: {
-    flex: 1,
-    marginRight: Spacing.sm,
   },
   brand: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-    textTransform: 'uppercase',
-  },
-  name: {
-    fontSize: FontSizes.lg,
-    color: Colors.text,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  priceSection: {
-    alignItems: 'flex-end',
-  },
-  price: {
-    fontSize: FontSizes.lg,
-    color: Colors.primary,
-    fontWeight: '700',
-  },
-  specs: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  specItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  specText: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
-  },
-  // Compact variant
-  compactCard: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-    width: 160,
-    marginRight: Spacing.sm,
-  },
-  compactImage: {
-    width: '100%',
-    height: 120,
-  },
-  compactContent: {
-    padding: Spacing.sm,
-  },
-  compactTitle: {
-    fontSize: FontSizes.sm,
-    color: Colors.text,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  compactPrice: {
     fontSize: FontSizes.xs,
     color: Colors.primary,
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  categoryBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.backgroundElevated,
+  },
+  categoryText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+  },
+  name: {
+    fontSize: FontSizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  features: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  feature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  featureText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+  },
+  price: {
+    fontSize: FontSizes.lg,
+    fontWeight: 'bold',
+    color: Colors.text,
+  },
+  priceLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
   },
 });
