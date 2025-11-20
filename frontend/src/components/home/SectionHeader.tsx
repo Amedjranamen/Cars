@@ -1,59 +1,60 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { Spacing, FontSizes } from '../../constants/spacing';
 
 interface SectionHeaderProps {
   title: string;
-  subtitle?: string;
-  showViewAll?: boolean;
-  onViewAll?: () => void;
+  actionText?: string;
+  onActionPress?: () => void;
 }
 
-export const SectionHeader: React.FC<SectionHeaderProps> = ({
+export function SectionHeader({
   title,
-  subtitle,
-  showViewAll = false,
-  onViewAll,
-}) => {
+  actionText,
+  onActionPress,
+}: SectionHeaderProps) {
   return (
-    <View style={styles.container}>
-      <View style={styles.textContainer}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
-      {showViewAll && onViewAll && (
-        <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
-          <Text style={styles.viewAll}>Voir tout →</Text>
+    <View style={styles.container} data-testid="section-header">
+      <Text style={styles.title}>{title}</Text>
+      {actionText && onActionPress && (
+        <TouchableOpacity
+          onPress={onActionPress}
+          style={styles.actionButton}
+          data-testid="section-action-button"
+        >
+          <Text style={styles.actionText}>{actionText}</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={Colors.primary}
+          />
         </TouchableOpacity>
       )}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
+    justifyContent: 'space-between',
     marginBottom: Spacing.md,
-  },
-  textContainer: {
-    flex: 1,
   },
   title: {
     fontSize: FontSizes.xl,
     fontWeight: 'bold',
     color: Colors.text,
   },
-  subtitle: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
-  viewAll: {
-    fontSize: FontSizes.md,
+  actionText: {
+    fontSize: FontSizes.sm,
     color: Colors.primary,
     fontWeight: '600',
   },

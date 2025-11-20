@@ -1,50 +1,29 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 
 interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
-  placeholder?: string;
   onSubmit?: () => void;
+  placeholder?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
+export function SearchBar({
   value,
   onChangeText,
-  placeholder = 'Rechercher un véhicule...',
   onSubmit,
-}) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handleFocus = () => {
-    scale.value = withSpring(1.02, { damping: 15, stiffness: 300 });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleBlur = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-  };
-
-  const handleClear = () => {
-    onChangeText('');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
+  placeholder = 'Rechercher un véhicule...',
+}: SearchBarProps) {
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <View style={styles.container} data-testid="search-bar">
       <View style={styles.searchContainer}>
         <Ionicons
           name="search"
@@ -58,34 +37,44 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={Colors.textSecondary}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
           onSubmitEditing={onSubmit}
           returnKeyType="search"
+          data-testid="search-input"
         />
         {value.length > 0 && (
-          <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
+          <TouchableOpacity
+            onPress={() => onChangeText('')}
+            style={styles.clearButton}
+            data-testid="clear-search-button"
+          >
             <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
-    </Animated.View>
+      <TouchableOpacity
+        style={styles.filterButton}
+        data-testid="filter-button"
+      >
+        <Ionicons name="options-outline" size={20} color={Colors.white} />
+      </TouchableOpacity>
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   searchContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.backgroundCard,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    height: 50,
   },
   searchIcon: {
     marginRight: Spacing.sm,
@@ -94,10 +83,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FontSizes.md,
     color: Colors.text,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.sm,
   },
   clearButton: {
-    marginLeft: Spacing.sm,
     padding: Spacing.xs,
+  },
+  filterButton: {
+    width: 50,
+    height: 50,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

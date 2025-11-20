@@ -1,13 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 
@@ -19,58 +13,41 @@ interface CategoryCardProps {
   onPress: () => void;
 }
 
-export const CategoryCard: React.FC<CategoryCardProps> = ({
+export function CategoryCard({
   name,
   icon,
   count,
   color,
   onPress,
-}) => {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
-    opacity.value = withTiming(0.8, { duration: 100 });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-    opacity.value = withTiming(1, { duration: 100 });
-  };
-
+}: CategoryCardProps) {
   return (
-    <Animated.View style={animatedStyle}>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        style={[styles.container, { backgroundColor: color + '15' }]}
-      >
-        <View style={[styles.iconContainer, { backgroundColor: color + '25' }]}>
-          <Ionicons name={icon} size={32} color={color} />
-        </View>
-        <Text style={styles.name}>{name}</Text>
-        <Text style={styles.count}>{count} véhicules</Text>
-      </TouchableOpacity>
-    </Animated.View>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.7}
+      data-testid={`category-card-${name.toLowerCase()}`}
+    >
+      <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+        <Ionicons name={icon} size={28} color={color} />
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={styles.name} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.count}>{count} véhicule{count !== 1 ? 's' : ''}</Text>
+      </View>
+    </TouchableOpacity>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -81,11 +58,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  textContainer: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
   name: {
-    fontSize: FontSizes.lg,
-    fontWeight: 'bold',
+    fontSize: FontSizes.md,
+    fontWeight: '600',
     color: Colors.text,
-    marginTop: Spacing.sm,
   },
   count: {
     fontSize: FontSizes.sm,

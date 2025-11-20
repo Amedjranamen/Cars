@@ -1,238 +1,197 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  ScrollView,
-  Dimensions,
-  StyleSheet,
   Text,
+  StyleSheet,
+  Dimensions,
   TouchableOpacity,
+  Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
-  useAnimatedStyle,
   useSharedValue,
+  useAnimatedStyle,
   withSpring,
   withTiming,
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 
 const { width } = Dimensions.get('window');
 const SLIDE_WIDTH = width - Spacing.lg * 2;
+const SLIDE_HEIGHT = 180;
 
-interface Slide {
-  id: string;
-  title: string;
-  subtitle: string;
-  gradient: string[];
-  icon: keyof typeof Ionicons.glyphMap;
-}
-
-const slides: Slide[] = [
+const slides = [
   {
     id: '1',
-    title: 'Location de Voitures',
-    subtitle: 'Des véhicules récents à partir de 25€/jour',
-    gradient: ['#0066FF', '#0052CC'],
-    icon: 'car-sport',
+    title: 'Location de Luxe',
+    subtitle: 'Réservez votre véhicule premium',
+    color: '#FF3B30',
+    gradient: ['#FF3B30', '#FF6B30'],
   },
   {
     id: '2',
-    title: 'Vente de Véhicules',
-    subtitle: 'Large sélection de voitures neuves et occasions',
-    gradient: ['#FF9500', '#CC7700'],
-    icon: 'pricetag',
+    title: 'Vente Exclusive',
+    subtitle: 'Des véhicules d\'exception à votre portée',
+    color: '#0A84FF',
+    gradient: ['#0A84FF', '#3385FF'],
   },
   {
     id: '3',
-    title: 'GPS & Tracking',
+    title: 'GPS Tracking',
     subtitle: 'Suivez votre véhicule en temps réel',
-    gradient: ['#34C759', '#28A745'],
-    icon: 'navigate-circle',
+    color: '#34C759',
+    gradient: ['#34C759', '#5FD77E'],
   },
 ];
 
-export const HeroSlider: React.FC = () => {
-  const scrollViewRef = useRef<ScrollView>(null);
+export function HeroSlider() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const nextIndex = (currentIndex + 1) % slides.length;
-      setCurrentIndex(nextIndex);
-      scrollViewRef.current?.scrollTo({
-        x: nextIndex * (SLIDE_WIDTH + Spacing.md),
-        animated: true,
-      });
-    }, 5000);
-
-    return () => clearInterval(timer);
+    startAutoPlay();
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [currentIndex]);
 
-  const handleScroll = (event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    scrollX.value = offsetX;
-    const index = Math.round(offsetX / (SLIDE_WIDTH + Spacing.md));
-    setCurrentIndex(index);
+  const startAutoPlay = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % slides.length);
+    }, 4000);
   };
+
+  useEffect(() => {
+    translateX.value = withSpring(-currentIndex * (SLIDE_WIDTH + Spacing.md), {
+      damping: 20,
+      stiffness: 90,
+    });
+  }, [currentIndex]);
+
+  const handleDotPress = (index: number) => {
+    setCurrentIndex(index);
+    startAutoPlay();
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  });
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled={false}
-        decelerationRate="fast"
-        snapToInterval={SLIDE_WIDTH + Spacing.md}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
-        {slides.map((slide, index) => (
-          <SlideItem
-            key={slide.id}
-            slide={slide}
-            index={index}
-            scrollX={scrollX}
-          />
-        ))}
-      </ScrollView>
+      <View style={styles.sliderContainer}>
+        <Animated.View style={[styles.slidesWrapper, animatedStyle]}>
+          {slides.map((slide, index) => {
+            return (
+              <TouchableOpacity
+                key={slide.id}
+                activeOpacity={0.9}
+                style={styles.slide}
+              >
+                <LinearGradient
+                  colors={slide.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.slideGradient}
+                >
+                  <View style={styles.slideContent}>
+                    <Text style={styles.slideTitle}>{slide.title}</Text>
+                    <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })}
+        </Animated.View>
+      </View>
 
-      {/* Pagination Dots */}
-      <View style={styles.pagination}>
+      {/* Dots Indicator */}
+      <View style={styles.dotsContainer}>
         {slides.map((_, index) => {
-          const dotStyle = useAnimatedStyle(() => {
-            const isActive = currentIndex === index;
-            return {
-              width: withSpring(isActive ? 24 : 8),
-              opacity: withTiming(isActive ? 1 : 0.4),
-            };
-          });
-
+          const isActive = index === currentIndex;
           return (
-            <Animated.View
+            <TouchableOpacity
               key={index}
-              style={[styles.dot, dotStyle]}
+              onPress={() => handleDotPress(index)}
+              style={[
+                styles.dot,
+                isActive ? styles.dotActive : styles.dotInactive,
+              ]}
             />
           );
         })}
       </View>
     </View>
   );
-};
-
-interface SlideItemProps {
-  slide: Slide;
-  index: number;
-  scrollX: Animated.SharedValue<number>;
 }
-
-const SlideItem: React.FC<SlideItemProps> = ({ slide, index, scrollX }) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * (SLIDE_WIDTH + Spacing.md),
-      index * (SLIDE_WIDTH + Spacing.md),
-      (index + 1) * (SLIDE_WIDTH + Spacing.md),
-    ];
-
-    const scale = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.9, 1, 0.9],
-      Extrapolate.CLAMP
-    );
-
-    const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.6, 1, 0.6],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View style={[styles.slideWrapper, animatedStyle]}>
-      <TouchableOpacity activeOpacity={0.95}>
-        <LinearGradient
-          colors={slide.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.slide}
-        >
-          <View style={styles.iconContainer}>
-            <Ionicons name={slide.icon} size={48} color={Colors.white} />
-          </View>
-          <Text style={styles.title}>{slide.title}</Text>
-          <Text style={styles.subtitle}>{slide.subtitle}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.md,
   },
-  scrollContent: {
+  sliderContainer: {
+    height: SLIDE_HEIGHT,
+    overflow: 'hidden',
+  },
+  slidesWrapper: {
+    flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
-  },
-  slideWrapper: {
-    width: SLIDE_WIDTH,
   },
   slide: {
     width: SLIDE_WIDTH,
-    height: 180,
+    height: SLIDE_HEIGHT,
+    marginRight: Spacing.md,
     borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    justifyContent: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    overflow: 'hidden',
   },
-  iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.md,
+  slideGradient: {
+    flex: 1,
+    padding: Spacing.lg,
+    justifyContent: 'flex-end',
   },
-  title: {
+  slideContent: {
+    gap: Spacing.xs,
+  },
+  slideTitle: {
     fontSize: FontSizes.xxl,
     fontWeight: 'bold',
     color: Colors.white,
-    marginBottom: Spacing.xs,
   },
-  subtitle: {
+  slideSubtitle: {
     fontSize: FontSizes.md,
     color: Colors.white,
     opacity: 0.9,
   },
-  pagination: {
+  dotsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: Spacing.xs,
+    justifyContent: 'center',
+    gap: Spacing.sm,
     marginTop: Spacing.md,
   },
   dot: {
     height: 8,
     borderRadius: BorderRadius.full,
+    transition: 'all 0.3s',
+  },
+  dotActive: {
+    width: 24,
     backgroundColor: Colors.primary,
+  },
+  dotInactive: {
+    width: 8,
+    backgroundColor: Colors.textSecondary,
+    opacity: 0.5,
   },
 });
