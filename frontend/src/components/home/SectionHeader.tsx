@@ -10,52 +10,44 @@ interface SectionHeaderProps {
   onActionPress?: () => void;
 }
 
-export function SectionHeader({
+export const SectionHeader: React.FC<SectionHeaderProps> = ({
   title,
   actionText,
   onActionPress,
-}: SectionHeaderProps) {
+}) => {
   return (
-    <View style={styles.container} data-testid="section-header">
+    <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       {actionText && onActionPress && (
-        <TouchableOpacity
-          onPress={onActionPress}
-          style={styles.actionButton}
-          data-testid="section-action-button"
-        >
+        <TouchableOpacity onPress={onActionPress} style={styles.action}>
           <Text style={styles.actionText}>{actionText}</Text>
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={Colors.primary}
-          />
+          <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
         </TouchableOpacity>
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   title: {
     fontSize: FontSizes.xl,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: Colors.text,
   },
-  actionButton: {
+  action: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
   },
   actionText: {
     fontSize: FontSizes.sm,
-    color: Colors.primary,
     fontWeight: '600',
+    color: Colors.primary,
   },
 });

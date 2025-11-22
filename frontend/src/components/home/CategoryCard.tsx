@@ -1,7 +1,13 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 
@@ -13,43 +19,53 @@ interface CategoryCardProps {
   onPress: () => void;
 }
 
-export function CategoryCard({
+export const CategoryCard: React.FC<CategoryCardProps> = ({
   name,
   icon,
   count,
   color,
   onPress,
-}: CategoryCardProps) {
+}) => {
   return (
     <TouchableOpacity
-      style={styles.container}
       onPress={onPress}
+      style={styles.container}
       activeOpacity={0.7}
       data-testid={`category-card-${name.toLowerCase()}`}
     >
-      <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={28} color={color} />
-      </View>
-      <View style={styles.textContainer}>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.count}>{count} véhicule{count !== 1 ? 's' : ''}</Text>
-      </View>
+      <LinearGradient
+        colors={[Colors.backgroundCard, Colors.backgroundLight]}
+        style={styles.gradient}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
+          <Ionicons name={icon} size={28} color={color} />
+        </View>
+        <View style={styles.content}>
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.count}>{count} véhicules</Text>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={Colors.textSecondary}
+          style={styles.arrow}
+        />
+      </LinearGradient>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    height: 100,
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
+  },
+  gradient: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    padding: Spacing.md,
   },
   iconContainer: {
     width: 56,
@@ -58,17 +74,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textContainer: {
+  content: {
     flex: 1,
-    gap: Spacing.xs,
+    marginLeft: Spacing.md,
   },
   name: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.lg,
+    fontWeight: '700',
     color: Colors.text,
+    marginBottom: Spacing.xs,
   },
   count: {
     fontSize: FontSizes.sm,
     color: Colors.textSecondary,
+  },
+  arrow: {
+    marginLeft: Spacing.sm,
   },
 });
