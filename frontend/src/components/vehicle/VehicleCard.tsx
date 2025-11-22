@@ -5,118 +5,108 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
+import { Badge } from '../common/Badge';
 import { Vehicle } from '../../types';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - Spacing.lg * 3) / 2;
 
 interface VehicleCardProps {
   vehicle: Vehicle;
   onPress: () => void;
 }
 
-export function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
-  const price = vehicle.price_sale || vehicle.price_per_day;
-  const priceLabel = vehicle.price_sale ? 'Prix' : '/jour';
+export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress }) => {
+  const price = vehicle.type === 'vente' || vehicle.type === 'both'
+    ? vehicle.price_sale
+    : vehicle.price_per_day;
+
+  const priceLabel = vehicle.type === 'location' ? '/jour' : '';
+
+  // Placeholder image URL
+  const imageUrl = vehicle.images?.[0] || 'https://via.placeholder.com/300x200/2C2C2E/FFFFFF?text=No+Image';
 
   return (
     <TouchableOpacity
-      style={styles.container}
       onPress={onPress}
+      style={styles.container}
       activeOpacity={0.8}
-      data-testid={`vehicle-card-${vehicle._id}`}
+      data-testid="vehicle-card"
     >
-      {/* Image */}
       <View style={styles.imageContainer}>
-        {vehicle.images && vehicle.images.length > 0 ? (
-          <Image
-            source={{ uri: vehicle.images[0] }}
-            style={styles.image}
-            resizeMode="cover"
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          style={styles.gradient}
+        />
+        <View style={styles.badge}>
+          <Badge
+            label={vehicle.type === 'both' ? 'Vente/Location' : vehicle.type === 'vente' ? 'Vente' : 'Location'}
+            variant="info"
+            size="sm"
           />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Ionicons name="car-sport" size={40} color={Colors.textSecondary} />
+        </View>
+        {!vehicle.available && (
+          <View style={styles.unavailableBadge}>
+            <Badge label="Non disponible" variant="error" size="sm" />
           </View>
         )}
-        
-        {/* Type Badge */}
-        <View style={[styles.typeBadge, 
-          vehicle.type === 'vente' ? styles.typeSale : 
-          vehicle.type === 'location' ? styles.typeRent : 
-          styles.typeBoth
-        ]}>
-          <Text style={styles.typeBadgeText}>
-            {vehicle.type === 'vente' ? '💰 Vente' : 
-             vehicle.type === 'location' ? '🔑 Location' : 
-             '🆕 Vente/Location'}
-          </Text>
-        </View>
-
-        {/* Favorite Button */}
-        <TouchableOpacity style={styles.favoriteButton}>
-          <Ionicons name="heart-outline" size={20} color={Colors.white} />
-        </TouchableOpacity>
       </View>
 
-      {/* Content */}
       <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>{vehicle.brand}</Text>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{vehicle.category}</Text>
-          </View>
-        </View>
-        
         <Text style={styles.name} numberOfLines={1}>
           {vehicle.name}
         </Text>
+        <Text style={styles.brand} numberOfLines={1}>
+          {vehicle.brand} • {vehicle.year}
+        </Text>
 
-        {/* Features */}
-        <View style={styles.features}>
-          <View style={styles.feature}>
+        <View style={styles.specs}>
+          <View style={styles.spec}>
             <Ionicons name="speedometer-outline" size={14} color={Colors.textSecondary} />
-            <Text style={styles.featureText}>{vehicle.mileage.toLocaleString()} km</Text>
+            <Text style={styles.specText}>{vehicle.mileage.toLocaleString()} km</Text>
           </View>
-          <View style={styles.feature}>
-            <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
-            <Text style={styles.featureText}>{vehicle.year}</Text>
-          </View>
-          <View style={styles.feature}>
-            <Ionicons 
-              name={vehicle.transmission === 'auto' ? 'settings-outline' : 'git-branch-outline'} 
-              size={14} 
-              color={Colors.textSecondary} 
+          <View style={styles.spec}>
+            <Ionicons
+              name={vehicle.transmission === 'auto' ? 'settings-outline' : 'hand-left-outline'}
+              size={14}
+              color={Colors.textSecondary}
             />
-            <Text style={styles.featureText}>
+            <Text style={styles.specText}>
               {vehicle.transmission === 'auto' ? 'Auto' : 'Manuel'}
             </Text>
           </View>
         </View>
 
-        {/* Price */}
-        <View style={styles.priceContainer}>
-          <Text style={styles.price}>
-            {price ? `${price.toLocaleString()} DH` : 'Prix NC'}
-          </Text>
-          {vehicle.price_per_day && (
-            <Text style={styles.priceLabel}>{priceLabel}</Text>
-          )}
+        <View style={styles.footer}>
+          <View>
+            <Text style={styles.price}>{price?.toLocaleString()} DH</Text>
+            {priceLabel && <Text style={styles.priceLabel}>{priceLabel}</Text>}
+          </View>
+          <Ionicons name="arrow-forward-circle" size={28} color={Colors.primary} />
         </View>
       </View>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
+    width: CARD_WIDTH,
     backgroundColor: Colors.backgroundCard,
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    marginBottom: Spacing.md,
   },
   imageContainer: {
     width: '100%',
@@ -126,105 +116,65 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+    backgroundColor: Colors.backgroundLight,
   },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.backgroundElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
   },
-  typeBadge: {
+  badge: {
     position: 'absolute',
     top: Spacing.sm,
     left: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
   },
-  typeSale: {
-    backgroundColor: 'rgba(52, 199, 89, 0.9)',
-  },
-  typeRent: {
-    backgroundColor: 'rgba(10, 132, 255, 0.9)',
-  },
-  typeBoth: {
-    backgroundColor: 'rgba(255, 149, 0, 0.9)',
-  },
-  typeBadgeText: {
-    fontSize: FontSizes.xs,
-    fontWeight: '600',
-    color: Colors.white,
-  },
-  favoriteButton: {
+  unavailableBadge: {
     position: 'absolute',
     top: Spacing.sm,
     right: Spacing.sm,
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   content: {
     padding: Spacing.md,
-    gap: Spacing.sm,
   },
-  header: {
+  name: {
+    fontSize: FontSizes.md,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: Spacing.xs,
+  },
+  brand: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+  specs: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  spec: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  specText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+  },
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  brand: {
-    fontSize: FontSizes.xs,
-    color: Colors.primary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  categoryBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.backgroundElevated,
-  },
-  categoryText: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSecondary,
-  },
-  name: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  features: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  featureText: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSecondary,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
   price: {
     fontSize: FontSizes.lg,
-    fontWeight: 'bold',
-    color: Colors.text,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   priceLabel: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
     color: Colors.textSecondary,
   },
 });

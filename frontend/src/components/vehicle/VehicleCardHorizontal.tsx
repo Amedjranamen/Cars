@@ -5,208 +5,217 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
+import { Badge } from '../common/Badge';
 import { Vehicle } from '../../types';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = width * 0.75;
 
 interface VehicleCardHorizontalProps {
   vehicle: Vehicle;
   onPress: () => void;
 }
 
-export function VehicleCardHorizontal({ vehicle, onPress }: VehicleCardHorizontalProps) {
-  const price = vehicle.price_sale || vehicle.price_per_day;
-  const priceLabel = vehicle.price_sale ? '' : '/jour';
+export const VehicleCardHorizontal: React.FC<VehicleCardHorizontalProps> = ({
+  vehicle,
+  onPress,
+}) => {
+  const price = vehicle.type === 'vente' || vehicle.type === 'both'
+    ? vehicle.price_sale
+    : vehicle.price_per_day;
+
+  const priceLabel = vehicle.type === 'location' ? '/jour' : '';
+
+  // Placeholder image URL
+  const imageUrl = vehicle.images?.[0] || 'https://via.placeholder.com/400x250/2C2C2E/FFFFFF?text=No+Image';
 
   return (
     <TouchableOpacity
-      style={styles.container}
       onPress={onPress}
+      style={styles.container}
       activeOpacity={0.8}
-      data-testid={`vehicle-card-horizontal-${vehicle._id}`}
+      data-testid="vehicle-card-horizontal"
     >
-      {/* Image */}
       <View style={styles.imageContainer}>
-        {vehicle.images && vehicle.images.length > 0 ? (
-          <Image
-            source={{ uri: vehicle.images[0] }}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Ionicons name="car-sport" size={32} color={Colors.textSecondary} />
-          </View>
-        )}
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.9)']}
+          style={styles.gradient}
+        />
         
-        {/* New Badge */}
-        <View style={styles.newBadge}>
-          <Text style={styles.newBadgeText}>✨ Nouveau</Text>
-        </View>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>{vehicle.brand}</Text>
-          <View style={[
-            styles.typeBadge,
-            vehicle.type === 'vente' ? styles.typeSale : 
-            vehicle.type === 'location' ? styles.typeRent : 
-            styles.typeBoth
-          ]}>
-            <Text style={styles.typeBadgeText}>
-              {vehicle.type === 'vente' ? 'Vente' : 
-               vehicle.type === 'location' ? 'Location' : 
-               'Les 2'}
-            </Text>
+        <View style={styles.overlay}>
+          <View style={styles.badges}>
+            <Badge
+              label={vehicle.category}
+              variant="info"
+              size="sm"
+            />
+            {!vehicle.available && (
+              <Badge label="Non disponible" variant="error" size="sm" />
+            )}
           </View>
-        </View>
-        
-        <Text style={styles.name} numberOfLines={2}>
-          {vehicle.name}
-        </Text>
 
-        {/* Features Row */}
-        <View style={styles.featuresRow}>
-          <View style={styles.feature}>
-            <Ionicons name="calendar-outline" size={12} color={Colors.textSecondary} />
-            <Text style={styles.featureText}>{vehicle.year}</Text>
-          </View>
-          <View style={styles.feature}>
-            <Ionicons name="speedometer-outline" size={12} color={Colors.textSecondary} />
-            <Text style={styles.featureText}>{vehicle.mileage.toLocaleString()} km</Text>
-          </View>
-        </View>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <View style={styles.titleContainer}>
+                <Text style={styles.name} numberOfLines={1}>
+                  {vehicle.name}
+                </Text>
+                <Text style={styles.brand}>
+                  {vehicle.brand} • {vehicle.year}
+                </Text>
+              </View>
+            </View>
 
-        {/* Price */}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>
-            {price ? `${price.toLocaleString()} DH${priceLabel}` : 'Prix NC'}
-          </Text>
-          <TouchableOpacity style={styles.arrowButton}>
-            <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
-          </TouchableOpacity>
+            <View style={styles.specs}>
+              <View style={styles.spec}>
+                <Ionicons name="speedometer-outline" size={16} color={Colors.text} />
+                <Text style={styles.specText}>{vehicle.mileage.toLocaleString()} km</Text>
+              </View>
+              <View style={styles.spec}>
+                <Ionicons
+                  name={vehicle.transmission === 'auto' ? 'settings-outline' : 'hand-left-outline'}
+                  size={16}
+                  color={Colors.text}
+                />
+                <Text style={styles.specText}>
+                  {vehicle.transmission === 'auto' ? 'Auto' : 'Manuel'}
+                </Text>
+              </View>
+              <View style={styles.spec}>
+                <Ionicons name="flash-outline" size={16} color={Colors.text} />
+                <Text style={styles.specText}>{vehicle.fuel}</Text>
+              </View>
+            </View>
+
+            <View style={styles.footer}>
+              <View>
+                <Text style={styles.price}>{price?.toLocaleString()} DH</Text>
+                {priceLabel && <Text style={styles.priceLabel}>{priceLabel}</Text>}
+              </View>
+              <View style={styles.viewButton}>
+                <Text style={styles.viewButtonText}>Voir détails</Text>
+                <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
+              </View>
+            </View>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    width: 280,
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    width: CARD_WIDTH,
+    height: 280,
     marginRight: Spacing.md,
+    borderRadius: BorderRadius.xxl,
+    overflow: 'hidden',
+    backgroundColor: Colors.backgroundCard,
   },
   imageContainer: {
     width: '100%',
-    height: 160,
+    height: '100%',
     position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
+    backgroundColor: Colors.backgroundLight,
   },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.backgroundElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  newBadge: {
+  gradient: {
     position: 'absolute',
-    top: Spacing.sm,
-    left: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: 'rgba(255, 149, 0, 0.9)',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '70%',
   },
-  newBadgeText: {
-    fontSize: FontSizes.xs,
-    fontWeight: '600',
-    color: Colors.white,
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: 0,
+    padding: Spacing.lg,
+    justifyContent: 'space-between',
+  },
+  badges: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
   },
   content: {
-    padding: Spacing.md,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  brand: {
-    fontSize: FontSizes.xs,
-    color: Colors.primary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  typeBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  typeSale: {
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
-  },
-  typeRent: {
-    backgroundColor: 'rgba(10, 132, 255, 0.2)',
-  },
-  typeBoth: {
-    backgroundColor: 'rgba(255, 149, 0, 0.2)',
-  },
-  typeBadgeText: {
-    fontSize: FontSizes.xs,
-    color: Colors.white,
-    fontWeight: '600',
+  titleContainer: {
+    flex: 1,
   },
   name: {
-    fontSize: FontSizes.md,
-    fontWeight: '600',
+    fontSize: FontSizes.xl,
+    fontWeight: '800',
     color: Colors.text,
-    minHeight: 38,
+    marginBottom: Spacing.xs,
   },
-  featuresRow: {
+  brand: {
+    fontSize: FontSizes.md,
+    color: Colors.text,
+    opacity: 0.8,
+  },
+  specs: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+  },
+  spec: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 6,
   },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
+  specText: {
+    fontSize: FontSizes.sm,
+    color: Colors.text,
+    fontWeight: '500',
   },
-  featureText: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSecondary,
-  },
-  priceRow: {
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: Spacing.xs,
   },
   price: {
-    fontSize: FontSizes.lg,
-    fontWeight: 'bold',
+    fontSize: FontSizes.xxl,
+    fontWeight: '900',
+    color: Colors.primary,
+  },
+  priceLabel: {
+    fontSize: FontSizes.sm,
     color: Colors.text,
   },
-  arrowButton: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.backgroundElevated,
+  viewButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Colors.backgroundCard,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+  },
+  viewButtonText: {
+    fontSize: FontSizes.sm,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });
