@@ -3,33 +3,26 @@ import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 
+type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'default';
+type BadgeSize = 'sm' | 'md';
+
 interface BadgeProps {
-  text: string;
-  variant?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'category';
-  size?: 'small' | 'medium' | 'large';
+  label: string;
+  variant?: BadgeVariant;
+  size?: BadgeSize;
   style?: ViewStyle;
   textStyle?: TextStyle;
-  categoryColor?: string;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
-  text,
-  variant = 'primary',
-  size = 'medium',
+  label,
+  variant = 'default',
+  size = 'md',
   style,
   textStyle,
-  categoryColor,
 }) => {
-  const getBackgroundColor = () => {
-    if (variant === 'category' && categoryColor) {
-      return categoryColor;
-    }
-    
+  const getBadgeColor = () => {
     switch (variant) {
-      case 'primary':
-        return Colors.primary;
-      case 'secondary':
-        return Colors.secondary;
       case 'success':
         return Colors.success;
       case 'error':
@@ -39,34 +32,30 @@ export const Badge: React.FC<BadgeProps> = ({
       case 'info':
         return Colors.info;
       default:
-        return Colors.primary;
+        return Colors.textSecondary;
     }
   };
 
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return { paddingHorizontal: 8, paddingVertical: 4, fontSize: FontSizes.xs };
-      case 'large':
-        return { paddingHorizontal: 16, paddingVertical: 10, fontSize: FontSizes.md };
-      default:
-        return { paddingHorizontal: 12, paddingVertical: 6, fontSize: FontSizes.sm };
-    }
-  };
-
-  const sizeStyles = getSizeStyles();
+  const badgeColor = getBadgeColor();
 
   return (
     <View
       style={[
         styles.badge,
-        { backgroundColor: getBackgroundColor() },
-        { paddingHorizontal: sizeStyles.paddingHorizontal, paddingVertical: sizeStyles.paddingVertical },
+        size === 'sm' ? styles.badgeSm : styles.badgeMd,
+        { backgroundColor: `${badgeColor}20` },
         style,
       ]}
     >
-      <Text style={[styles.text, { fontSize: sizeStyles.fontSize }, textStyle]}>
-        {text}
+      <Text
+        style={[
+          styles.text,
+          size === 'sm' ? styles.textSm : styles.textMd,
+          { color: badgeColor },
+          textStyle,
+        ]}
+      >
+        {label}
       </Text>
     </View>
   );
@@ -74,11 +63,26 @@ export const Badge: React.FC<BadgeProps> = ({
 
 const styles = StyleSheet.create({
   badge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.md,
     alignSelf: 'flex-start',
   },
+  badgeSm: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  badgeMd: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
   text: {
-    color: Colors.white,
     fontWeight: '600',
+  },
+  textSm: {
+    fontSize: FontSizes.xs,
+  },
+  textMd: {
+    fontSize: FontSizes.sm,
   },
 });

@@ -1,59 +1,75 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  TextInput, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
   TextInputProps,
-  TouchableOpacity 
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { BorderRadius, Spacing, FontSizes } from '../../constants/spacing';
+import { Spacing, BorderRadius, FontSizes } from '../../constants/spacing';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-  secureTextEntry?: boolean;
+  leftIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Ionicons.glyphMap;
+  onRightIconPress?: () => void;
+  containerStyle?: any;
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
   error,
-  icon,
-  secureTextEntry,
-  ...props
+  leftIcon,
+  rightIcon,
+  onRightIconPress,
+  containerStyle,
+  ...textInputProps
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, error && styles.inputError]}>
-        {icon && (
-          <Ionicons 
-            name={icon} 
-            size={20} 
-            color={Colors.textSecondary} 
-            style={styles.icon}
+      <View
+        style={[
+          styles.inputContainer,
+          isFocused && styles.inputContainerFocused,
+          error && styles.inputContainerError,
+        ]}
+      >
+        {leftIcon && (
+          <Ionicons
+            name={leftIcon}
+            size={20}
+            color={isFocused ? Colors.primary : Colors.textSecondary}
+            style={styles.leftIcon}
           />
         )}
         <TextInput
-          style={styles.input}
+          {...textInputProps}
+          style={[
+            styles.input,
+            leftIcon && styles.inputWithLeftIcon,
+            rightIcon && styles.inputWithRightIcon,
+          ]}
           placeholderTextColor={Colors.textTertiary}
-          secureTextEntry={secureTextEntry && !showPassword}
-          {...props}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         />
-        {secureTextEntry && (
-          <TouchableOpacity 
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeIcon}
+        {rightIcon && (
+          <TouchableOpacity
+            onPress={onRightIconPress}
+            style={styles.rightIconContainer}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons 
-              name={showPassword ? 'eye-off' : 'eye'} 
-              size={20} 
-              color={Colors.textSecondary}
+            <Ionicons
+              name={rightIcon}
+              size={20}
+              color={isFocused ? Colors.primary : Colors.textSecondary}
             />
           </TouchableOpacity>
         )}
@@ -71,35 +87,46 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.backgroundCard,
     borderRadius: BorderRadius.lg,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
+    height: 52,
   },
-  inputError: {
+  inputContainerFocused: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.backgroundLight,
+  },
+  inputContainerError: {
     borderColor: Colors.error,
   },
   input: {
     flex: 1,
-    height: 48,
     fontSize: FontSizes.md,
     color: Colors.text,
+    paddingHorizontal: Spacing.md,
   },
-  icon: {
-    marginRight: Spacing.sm,
+  inputWithLeftIcon: {
+    paddingLeft: Spacing.xs,
   },
-  eyeIcon: {
-    padding: Spacing.xs,
+  inputWithRightIcon: {
+    paddingRight: Spacing.xs,
+  },
+  leftIcon: {
+    marginLeft: Spacing.md,
+  },
+  rightIconContainer: {
+    paddingHorizontal: Spacing.md,
   },
   errorText: {
     fontSize: FontSizes.xs,
     color: Colors.error,
     marginTop: Spacing.xs,
+    marginLeft: Spacing.sm,
   },
 });
